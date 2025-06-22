@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
+import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
 import './Map.css'
 
@@ -16,6 +16,23 @@ let DefaultIcon = L.icon({
 })
 
 L.Marker.prototype.options.icon = DefaultIcon
+
+// Component to save map position when it changes
+function SaveMapPosition() {
+  useMapEvents({
+    moveend: (e) => {
+      const map = e.target
+      const center = map.getCenter()
+      const zoom = map.getZoom()
+      localStorage.setItem('mapPosition', JSON.stringify({
+        lat: center.lat,
+        lng: center.lng,
+        zoom: zoom
+      }))
+    }
+  })
+  return null
+}
 
 // Component to handle map center updates when position changes
 function MapCenterUpdater({ position }: { position: [number, number] | null }) {
@@ -36,11 +53,26 @@ interface MapProps {
 }
 
 function Map({ position, locationEnabled }: MapProps) {
+  // Get initial position from localStorage or use defaults
+  let center: [number, number] = [0, 0]
+  let zoom = 2
+  
+  try {
+    const savedPosition = localStorage.getItem('mapPosition')
+    if (savedPosition) {
+      const parsed = JSON.parse(savedPosition)
+      center = [parsed.lat, parsed.lng]
+      zoom = parsed.zoom
+    }
+  } catch (e) {
+    console.error('Error loading saved position:', e)
+  }
+
   return (
     <div className="map-container">
-      <MapContainer 
-        center={[0, 0]} 
-        zoom={2} 
+      <MapContainer
+        center={center}
+        zoom={zoom}
         style={{ height: '100%', width: '100%' }}
         zoomControl={false} // Move zoom control to right side
       >
@@ -59,6 +91,9 @@ function Map({ position, locationEnabled }: MapProps) {
         )}
         {/* This component will update the map center when position changes */}
         {position && locationEnabled && <MapCenterUpdater position={position} />}
+        
+        {/* This component will save map position to localStorage */}
+        <SaveMapPosition />
       </MapContainer>
     </div>
   )
