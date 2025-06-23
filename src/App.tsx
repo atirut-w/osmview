@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import './App.css'
 import Map from './components/Map'
+import InfoSidebar from './components/InfoSidebar'
+import type { OSMFeature } from './components/InfoSidebar'
 
 // Material UI imports
 import { ThemeProvider, createTheme } from '@mui/material/styles'
@@ -29,6 +31,7 @@ function App() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [mapReady, setMapReady] = useState(false)
+  const [selectedFeature, setSelectedFeature] = useState<OSMFeature | null>(null)
 
   // Default map center (0,0) until we get a location
   useEffect(() => {
@@ -71,6 +74,14 @@ function App() {
     }
   }
 
+  const handleFeatureClick = (feature: OSMFeature | null) => {
+    setSelectedFeature(feature);
+  }
+
+  const handleSidebarClose = () => {
+    setSelectedFeature(null);
+  }
+
   return (
     <ThemeProvider theme={theme}>
       <div className="app-container">
@@ -106,8 +117,15 @@ function App() {
           <Map
             position={position}
             locationEnabled={locationEnabled}
+            onFeatureClick={handleFeatureClick}
           />
         )}
+
+        {/* Info sidebar */}
+        <InfoSidebar
+          feature={selectedFeature}
+          onClose={handleSidebarClose}
+        />
       </div>
     </ThemeProvider>
   )
