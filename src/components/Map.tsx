@@ -28,7 +28,7 @@ function MapEventHandler({ onFeatureClick, selectedFeature }: {
   const [currentHighlight, setCurrentHighlight] = useState<L.Layer | null>(null);
   
   const map = useMapEvents({
-    moveend: (e) => {
+    moveend: () => {
       const center = map.getCenter()
       const zoom = map.getZoom()
       console.log(`Map position set to (${center.lat}, ${center.lng}, ${zoom})`);
