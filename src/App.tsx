@@ -87,7 +87,7 @@ function App() {
       <div className="app-container">
         {/* Overlay for title and status messages */}
         <Paper elevation={3} className="overlay">
-          <Typography variant="h5" component="h1">OSM Viewer</Typography>
+          <Typography variant="h5" component="h1">OSMView</Typography>
           {loading && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <CircularProgress size={20} />
