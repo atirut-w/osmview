@@ -1,32 +1,46 @@
 .info-sidebar {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  z-index: 1000;
-  width: 350px;
-  max-width: 90%;
-  max-height: calc(100vh - 20px);
-  overflow-y: auto;
-  background-color: rgba(255, 255, 255, 0.97);
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1100;
+  width: 400px;
+  height: 100vh;
+  background-color: #ffffff;
   transition: all 0.3s ease;
-  border-radius: 8px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  border-radius: 0;
+  box-shadow: 2px 0 16px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
 }
 
 .sidebar-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 16px;
-  background-color: #f5f5f5;
-  border-top-left-radius: 8px;
-  border-top-right-radius: 8px;
+  padding: 16px 20px;
+  background-color: #ffffff;
+  border-bottom: 1px solid #e0e0e0;
+  flex-shrink: 0;
+}
+
+.sidebar-tabs {
+  flex-shrink: 0;
   border-bottom: 1px solid #e0e0e0;
 }
 
 .sidebar-content {
-  padding: 16px;
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.tab-content {
+  padding: 20px;
   font-size: 14px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .sidebar-content a {
@@ -41,7 +55,7 @@
 /* Animation for sidebar appearance */
 @keyframes slideIn {
   from {
-    transform: translateX(-20px);
+    transform: translateX(-100%);
     opacity: 0;
   }
   to {
@@ -50,15 +64,43 @@
   }
 }
 
+@keyframes slideOut {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+}
+
 .info-sidebar {
   animation: slideIn 0.3s ease forwards;
 }
 
+.info-sidebar.closing {
+  animation: slideOut 0.3s ease forwards;
+}
+
 /* Responsive adjustments */
-@media (max-width: 600px) {
+@media (max-width: 768px) {
   .info-sidebar {
-    width: 300px;
-    top: auto;
-    bottom: 10px;
+    width: 100%;
+    max-width: 400px;
+  }
+}
+
+@media (max-width: 480px) {
+  .info-sidebar {
+    width: 100%;
+  }
+  
+  .sidebar-header {
+    padding: 12px 16px;
+  }
+  
+  .tab-content {
+    padding: 16px;
   }
 }

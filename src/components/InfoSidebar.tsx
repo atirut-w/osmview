@@ -1,5 +1,6 @@
-import { Paper, Typography, IconButton, Box, Divider, List, ListItem, ListItemText, Chip } from '@mui/material';
+import { Paper, Typography, IconButton, Box, Divider, List, ListItem, ListItemText, Chip, Tabs, Tab } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
+import { useState } from 'react';
 import './InfoSidebar.css';
 
 export interface OSMFeature {
@@ -16,7 +17,23 @@ interface InfoSidebarProps {
 }
 
 const InfoSidebar = ({ feature, onClose }: InfoSidebarProps) => {
+  const [activeTab, setActiveTab] = useState(0);
+  const [isClosing, setIsClosing] = useState(false);
+  
   if (!feature) return null;
+
+  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
+    setActiveTab(newValue);
+  };
+
+  const handleClose = () => {
+    setIsClosing(true);
+    // Wait for animation to complete before actually closing
+    setTimeout(() => {
+      setIsClosing(false);
+      onClose();
+    }, 300);
+  };
 
   // Format the feature name for display
   const featureName = feature.name || feature.tags?.name || feature.tags?.['addr:street'] || 
@@ -149,104 +166,136 @@ const InfoSidebar = ({ feature, onClose }: InfoSidebarProps) => {
     ([key]) => !excludedTags.includes(key)
   );
 
+  const renderOverviewTab = () => (
+    <Box className="tab-content">
+      <Box sx={{ mb: 2 }}>
+        <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 0.5 }}>
+          {getFeatureType()}
+        </Typography>
+        
+        {feature.tags?.website && (
+          <Typography variant="body2" sx={{ mb: 1 }}>
+            <a
+              href={feature.tags.website.startsWith('http') ? feature.tags.website : `https://${feature.tags.website}`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Website
+            </a>
+          </Typography>
+        )}
+        
+        {feature.tags?.phone && (
+          <Typography variant="body2" sx={{ mb: 1 }}>
+            📞 {feature.tags.phone}
+          </Typography>
+        )}
+        
+        {feature.tags?.opening_hours && (
+          <Typography variant="body2" sx={{ mb: 1 }}>
+            ⏰ {feature.tags.opening_hours}
+          </Typography>
+        )}
+        
+        {(feature.tags?.address || feature.tags?.['addr:street']) && (
+          <Typography variant="body2" sx={{ mb: 1 }}>
+            📍 {feature.tags.address ||
+                (feature.tags?.['addr:housenumber'] && feature.tags?.['addr:street'] ?
+                  `${feature.tags['addr:housenumber']} ${feature.tags['addr:street']}` :
+                  feature.tags?.['addr:street'] || '')}
+            {feature.tags?.['addr:city'] ? `, ${feature.tags['addr:city']}` : ''}
+          </Typography>
+        )}
+        
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 1, fontSize: '0.75rem' }}>
+          OSM ID: {feature.id} ({feature.type})
+        </Typography>
+      </Box>
+      
+      <Box sx={{ mt: 'auto', display: 'flex', justifyContent: 'center' }}>
+        <Typography variant="caption" color="text.secondary">
+          <a
+            href={`https://www.openstreetmap.org/${feature.type}/${feature.id}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ textDecoration: 'none', color: 'inherit' }}
+          >
+            View on OpenStreetMap
+          </a>
+        </Typography>
+      </Box>
+    </Box>
+  );
+
+  const renderPropertiesTab = () => (
+    <Box className="tab-content">
+      {filteredTags.length > 0 ? (
+        <List dense>
+          {filteredTags.map(([key, value]) => (
+            <ListItem key={key} disablePadding sx={{ py: 0.5 }}>
+              <ListItemText
+                primary={
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <Chip
+                      label={key.replace(/:/g, ' ')}
+                      size="small"
+                      variant="outlined"
+                      sx={{ mr: 1, minWidth: '80px' }}
+                    />
+                    <Typography variant="body2" sx={{ wordBreak: 'break-word', flex: 1 }}>
+                      {value}
+                    </Typography>
+                  </Box>
+                }
+              />
+            </ListItem>
+          ))}
+        </List>
+      ) : (
+        <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', mt: 4 }}>
+          No additional properties available
+        </Typography>
+      )}
+    </Box>
+  );
+
   return (
-    <Paper className="info-sidebar" elevation={3}>
+    <Paper className={`info-sidebar ${isClosing ? 'closing' : ''}`} elevation={3}>
       <Box className="sidebar-header">
-        <Typography variant="h6" component="h2">
+        <Typography variant="h6" component="h2" sx={{ flex: 1, pr: 1 }}>
           {feature.displayName || featureName}
         </Typography>
-        <IconButton aria-label="close" onClick={onClose} size="small">
+        <IconButton aria-label="close" onClick={handleClose} size="small">
           <CloseIcon />
         </IconButton>
       </Box>
       
-      <Divider />
+      <Box className="sidebar-tabs">
+        <Tabs
+          value={activeTab}
+          onChange={handleTabChange}
+          variant="fullWidth"
+          sx={{
+            minHeight: 48,
+            '& .MuiTab-root': {
+              minHeight: 48,
+              textTransform: 'none',
+              fontSize: '0.875rem',
+              fontWeight: 500,
+            },
+            '& .MuiTabs-indicator': {
+              height: 2,
+            }
+          }}
+        >
+          <Tab label="Overview" />
+          <Tab label="Properties" />
+        </Tabs>
+      </Box>
       
       <Box className="sidebar-content">
-        <Box sx={{ mb: 2 }}>
-          <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 0.5 }}>
-            {getFeatureType()}
-          </Typography>
-          
-          {feature.tags?.website && (
-            <Typography variant="body2" sx={{ mb: 1 }}>
-              <a
-                href={feature.tags.website.startsWith('http') ? feature.tags.website : `https://${feature.tags.website}`}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                Website
-              </a>
-            </Typography>
-          )}
-          
-          {feature.tags?.phone && (
-            <Typography variant="body2" sx={{ mb: 1 }}>
-              📞 {feature.tags.phone}
-            </Typography>
-          )}
-          
-          {feature.tags?.opening_hours && (
-            <Typography variant="body2" sx={{ mb: 1 }}>
-              ⏰ {feature.tags.opening_hours}
-            </Typography>
-          )}
-          
-          {(feature.tags?.address || feature.tags?.['addr:street']) && (
-            <Typography variant="body2" sx={{ mb: 1 }}>
-              📍 {feature.tags.address ||
-                  (feature.tags?.['addr:housenumber'] && feature.tags?.['addr:street'] ?
-                    `${feature.tags['addr:housenumber']} ${feature.tags['addr:street']}` :
-                    feature.tags?.['addr:street'] || '')}
-              {feature.tags?.['addr:city'] ? `, ${feature.tags['addr:city']}` : ''}
-            </Typography>
-          )}
-          
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 1, fontSize: '0.75rem' }}>
-            OSM ID: {feature.id} ({feature.type})
-          </Typography>
-        </Box>
-
-        {filteredTags.length > 0 && (
-          <>
-            <Divider sx={{ my: 1.5 }} />
-            <Typography variant="subtitle2" sx={{ mt: 2, mb: 1, fontWeight: 'bold' }}>Properties</Typography>
-            <List dense>
-              {filteredTags.map(([key, value]) => (
-                <ListItem key={key} disablePadding sx={{ py: 0.5 }}>
-                  <ListItemText
-                    primary={
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                        <Chip
-                          label={key.replace(/:/g, ' ')}
-                          size="small"
-                          variant="outlined"
-                          sx={{ mr: 1, minWidth: '80px' }}
-                        />
-                        <Typography variant="body2" sx={{ wordBreak: 'break-word', flex: 1 }}>
-                          {value}
-                        </Typography>
-                      </Box>
-                    }
-                  />
-                </ListItem>
-              ))}
-            </List>
-          </>
-        )}
-        
-        <Box sx={{ mt: 2, display: 'flex', justifyContent: 'center' }}>
-          <Typography variant="caption" color="text.secondary">
-            <a
-              href={`https://www.openstreetmap.org/${feature.type}/${feature.id}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ textDecoration: 'none', color: 'inherit' }}
-            >
-              View on OpenStreetMap
-            </a>
-          </Typography>
-        </Box>
+        {activeTab === 0 && renderOverviewTab()}
+        {activeTab === 1 && renderPropertiesTab()}
       </Box>
     </Paper>
   );
