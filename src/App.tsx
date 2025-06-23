@@ -118,6 +118,7 @@ function App() {
             position={position}
             locationEnabled={locationEnabled}
             onFeatureClick={handleFeatureClick}
+            selectedFeature={selectedFeature}
           />
         )}
 

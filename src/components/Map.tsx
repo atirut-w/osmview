@@ -19,7 +19,14 @@ let DefaultIcon = L.icon({
 L.Marker.prototype.options.icon = DefaultIcon
 
 // Component to save map position and handle map clicks
-function MapEventHandler({ onFeatureClick }: { onFeatureClick: (feature: OSMFeature | null) => void }) {
+function MapEventHandler({ onFeatureClick, selectedFeature }: {
+  onFeatureClick: (feature: OSMFeature | null) => void,
+  selectedFeature: OSMFeature | null
+}) {
+  // State to track the current marker and highlight layer
+  const [currentMarker, setCurrentMarker] = useState<L.CircleMarker | null>(null);
+  const [currentHighlight, setCurrentHighlight] = useState<L.Layer | null>(null);
+  
   const map = useMapEvents({
     moveend: (e) => {
       const center = map.getCenter()
@@ -269,6 +276,14 @@ function MapEventHandler({ onFeatureClick }: { onFeatureClick: (feature: OSMFeat
                 `${bestElement.tags?.['addr:housenumber'] || ''} ${bestElement.tags?.['addr:street']}` : null)
             };
           
+            // Clean up previous markers and highlights
+            if (currentMarker) {
+              map.removeLayer(currentMarker);
+            }
+            if (currentHighlight) {
+              map.removeLayer(currentHighlight);
+            }
+            
             // Create a marker at the click location
             const clickMarker = L.circleMarker([lat, lng], {
               radius: 5,
@@ -277,6 +292,9 @@ function MapEventHandler({ onFeatureClick }: { onFeatureClick: (feature: OSMFeat
               fillOpacity: 1,
               weight: 2
             }).addTo(map);
+            
+            // Save the new marker reference
+            setCurrentMarker(clickMarker);
             
             // Highlight the feature on the map
             if (bestElement.type === 'way' && bestElement.nodes) {
@@ -322,29 +340,17 @@ function MapEventHandler({ onFeatureClick }: { onFeatureClick: (feature: OSMFeat
                       highlightLayer = L.polyline(latlngs, lineStyle).addTo(map);
                     }
                     
-                    // Remove the highlight after 3 seconds
-                    setTimeout(() => {
-                      map.removeLayer(clickMarker);
-                      map.removeLayer(highlightLayer);
-                    }, 3000);
+                    // Save the highlight layer reference
+                    setCurrentHighlight(highlightLayer);
                   } catch (error) {
                     console.error('Error highlighting feature:', error);
-                    // Remove just the click marker after 3 seconds
-                    setTimeout(() => {
-                      map.removeLayer(clickMarker);
-                    }, 3000);
+                    // No need to remove the marker automatically
                   }
                 } else {
-                  // Not enough valid nodes, just remove the click marker after 3 seconds
-                  setTimeout(() => {
-                    map.removeLayer(clickMarker);
-                  }, 3000);
+                  // Not enough valid nodes, but we'll keep the marker
                 }
               } else {
-                // No nodes found, just remove the click marker after 3 seconds
-                setTimeout(() => {
-                  map.removeLayer(clickMarker);
-                }, 3000);
+                // No nodes found, but we'll keep the marker
               }
             }
             // For nodes (points)
@@ -359,17 +365,12 @@ function MapEventHandler({ onFeatureClick }: { onFeatureClick: (feature: OSMFeat
                 weight: 2
               }).addTo(map);
               
-              // Remove the marker after 3 seconds
-              setTimeout(() => {
-                map.removeLayer(nodeMarker);
-              }, 3000);
+              // Save the node marker reference
+              setCurrentMarker(nodeMarker);
             }
             // For other types or if no geometry
             else {
-              // Just remove the click marker after 3 seconds
-              setTimeout(() => {
-                map.removeLayer(clickMarker);
-              }, 3000);
+              // Keep the click marker
             }
             
             onFeatureClick(feature);
@@ -404,6 +405,20 @@ function MapEventHandler({ onFeatureClick }: { onFeatureClick: (feature: OSMFeat
     }
   });
   
+  // Effect to clean up markers when selectedFeature becomes null (sidebar closed)
+  useEffect(() => {
+    if (selectedFeature === null && (currentMarker || currentHighlight)) {
+      if (currentMarker) {
+        map.removeLayer(currentMarker);
+        setCurrentMarker(null);
+      }
+      if (currentHighlight) {
+        map.removeLayer(currentHighlight);
+        setCurrentHighlight(null);
+      }
+    }
+  }, [selectedFeature, map, currentMarker, currentHighlight]);
+  
   return null;
 }
 
@@ -424,9 +439,10 @@ interface MapProps {
   position: [number, number] | null;
   locationEnabled: boolean;
   onFeatureClick: (feature: OSMFeature | null) => void;
+  selectedFeature: OSMFeature | null;
 }
 
-function Map({ position, locationEnabled, onFeatureClick }: MapProps) {
+function Map({ position, locationEnabled, onFeatureClick, selectedFeature }: MapProps) {
   // Get initial position from localStorage or use defaults
   let center: [number, number] = [0, 0]
   let zoom = 2
@@ -468,7 +484,7 @@ function Map({ position, locationEnabled, onFeatureClick }: MapProps) {
         {position && locationEnabled && <MapCenterUpdater position={position} />}
         
         {/* This component will save map position and handle clicks */}
-        <MapEventHandler onFeatureClick={onFeatureClick} />
+        <MapEventHandler onFeatureClick={onFeatureClick} selectedFeature={selectedFeature} />
       </MapContainer>
     </div>
   )
